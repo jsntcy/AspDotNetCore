@@ -1,26 +1,65 @@
 ﻿namespace CityInfo.API
 {
+    using CityInfo.API.Entities;
+    using CityInfo.API.Services;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Mvc.Formatters;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using NLog.Extensions.Logging;
 
     public class Startup
     {
+        public static IConfiguration Configuration { get; private set; }
+
+        // For ASP.Net Core 1.x
+        //public Startup(IHostingEnvironment env)
+        //{
+        //    var builder = new ConfigurationBuilder()
+        //        .SetBasePath(env.ContentRootPath)
+        //        .AddJsonFile("appSettings.json", false, true)
+        //        .AddJsonFile($"appSettings.{env.EnvironmentName}.json", true, true);
+
+        //    Configuration = builder.Build();
+        //}
+
+        // For ASP.Net Core 2.x
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc()
                 .AddMvcOptions(o => o.OutputFormatters.Add(
+                    // Let our service support xml as response type, default is json.
                     new XmlDataContractSerializerOutputFormatter()));
+
+#if DEBUG
+            services.AddTransient<IMailService, LocalMailService>();
+#else
+            services.AddTransient<IMailService, CloudMailService>();
+#endif
+
+            // If use way 2 to provide connection string to DBContext, it's unnecessary to add "o => o.UseSqlServer(connectionString)" here.
+            var connectionString = @"Server=(localdb)\mssqllocaldb;Database=CityInfoDB;Trusted_Connection=True;";
+            services.AddDbContext<CityInfoContext>(o => o.UseSqlServer(connectionString));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, CityInfoContext cityInfoContext)
         {
-            loggerFactory.AddConsole();
+            //loggerFactory.AddConsole();
+            //loggerFactory.AddDebug();
+
+            //loggerFactory.AddProvider(new NLogLoggerProvider());
+            loggerFactory.AddNLog();
 
             if (env.IsDevelopment())
             {
@@ -28,8 +67,10 @@
             }
             else
             {
-                app.UseExceptionHandler();
+                app.UseExceptionHandler("/error");
             }
+
+            //cityInfoContext.EnsureSeedDataForContext();
 
             app.UseStatusCodePages();
 

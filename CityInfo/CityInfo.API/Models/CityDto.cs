@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-
-namespace CityInfo.API.Models
+﻿namespace CityInfo.API.Models
 {
+    using System.Collections.Generic;
+
     public class CityDto
     {
         public int Id { get; set; }
