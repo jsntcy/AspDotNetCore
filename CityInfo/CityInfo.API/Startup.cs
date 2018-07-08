@@ -1,6 +1,8 @@
 ﻿namespace CityInfo.API
 {
+    using AutoMapper;
     using CityInfo.API.Entities;
+    using CityInfo.API.Models;
     using CityInfo.API.Services;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
@@ -48,8 +50,10 @@
 #endif
 
             // If use way 2 to provide connection string to DBContext, it's unnecessary to add "o => o.UseSqlServer(connectionString)" here.
-            var connectionString = @"Server=(localdb)\mssqllocaldb;Database=CityInfoDB;Trusted_Connection=True;";
+            var connectionString = Configuration["connectionStrings:cityInfoDBConnectionString"];
             services.AddDbContext<CityInfoContext>(o => o.UseSqlServer(connectionString));
+
+            services.AddScoped<ICityInfoRepository, CityInfoRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -70,11 +74,26 @@
                 app.UseExceptionHandler("/error");
             }
 
-            //cityInfoContext.EnsureSeedDataForContext();
+            cityInfoContext.EnsureSeedDataForContext();
 
             app.UseStatusCodePages();
 
             app.UseMvc();
+
+            Mapper.Initialize(cfg =>
+            {
+                // Way 1
+                cfg.CreateMap<City, CityWithoutPointsOfInterestDto>();
+                cfg.CreateMap<City, CityDto>();
+                cfg.CreateMap<PointOfInterestForCreationDto, PointOfInterest>();
+                cfg.CreateMap<PointOfInterest, PointOfInterestDto>();
+                cfg.CreateMap<PointOfInterestForUpdateDto, PointOfInterest>();
+                cfg.CreateMap<PointOfInterest, PointOfInterestForUpdateDto>();
+                // cfg.CreateMap<Entities.PointOfInterest, Models.PointOfInterestDto>(); // Don't need for AutoMapper 7.x.x
+                // Way 2
+                //cfg.CreateMap(typeof(City), typeof(CityWithoutPointsOfInterestDto));
+            });
+
             // Convention-based routing
             // Typically for using MVC framework to build a web application with HTML-returning views.
             // For web api, using attribute-based routing.

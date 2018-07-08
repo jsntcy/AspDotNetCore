@@ -1,6 +1,7 @@
 ﻿namespace CityInfo.API.Services
 {
     using System.Diagnostics;
+    using CityInfo.API.Common;
 
     public class CloudMailService : IMailService
     {
@@ -9,6 +10,9 @@
 
         public void Send(string subject, string message)
         {
+            Guard.ArgumentNotNullOrEmpty(subject, nameof(subject));
+            Guard.ArgumentNotNullOrEmpty(message, nameof(message));
+
             Debug.WriteLine($"Mail from {_mailFrom} to {_mailTo}, with CloudMailService.");
             Debug.WriteLine($"Subject: {subject}");
             Debug.WriteLine($"Message: {message}");
